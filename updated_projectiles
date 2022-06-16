@@ -1,0 +1,263 @@
+##"""
+##Created on Mon Nov 23 07:58:02 2020
+##
+##@author: mahir kaya
+##Projectile Motion Simulation
+##"""
+##
+##
+############IMPORTED MODULES############
+import math
+from tkinter import * 
+import tkinter as tk
+import numpy as np 
+# =============================================================================
+# 
+from PIL import ImageTk,Image  
+# =============================================================================
+
+from matplotlib import pyplot as plt
+###########################################
+#########GRAPH CLASSES###############
+class Pos(object):
+    def __init__(self,x,y):
+        self.x=x
+        self.y=y
+    def getX(self):
+        return self.x
+    def getY(self):
+        return self.y
+    def __str__(self):
+        return str(self.x)+','+str(self.y)
+    
+class projectile(object):
+    
+    def __init__(self, vi, initPos,angle=0 , g=-9.8,  finalPos=0):
+        self.vi=vi
+        self.angle=angle
+        self.g=g
+        self.initPos=initPos
+        self.finalPos=finalPos
+        self.accelerationx=0
+        self.deltaxy=self.initPos.getY()-finalPos
+        self.angleRadian=(math.pi/180)*(self.angle)
+        self.Viy=((self.vi)*math.sin(self.angleRadian))
+        self.Time=0
+        self.OrigT=0
+        self.origFP=0
+        self.Vix=round(math.cos(self.angleRadian),2)*self.vi
+        
+    def calculateTimeToFall(self):        
+        delta=((4*self.Viy**2)+(8*-self.g*self.initPos.getY()))**.5
+        time=((2*self.Viy)+delta)/(-2*self.g)
+        return time
+
+    def getRange(self):
+         Range=self.vi**2*2*math.sin(self.angleRadian)*math.cos(self.angleRadian)/-self.g
+         Range=self.Vix*self.calculateTimeToFall()
+         return round(Range,2)
+     
+    def update1s(self,time):
+        self.Time+=time
+        self.VY=self.Viy+self.g*self.Time
+        xComponent=self.Vix*self.Time+(1/2*self.accelerationx*self.Time**2)
+        yComponent=(self.Viy*self.Time+(1/2*self.g*self.Time**2))
+        newPos=Pos(round(self.initPos.getX()+xComponent,2),round(self.initPos.getY()+yComponent,2))
+        return(newPos)
+        
+    def graphDxT(self):
+        x_values=[]
+        y_values=[]
+        y2_values=[]
+        x_graph=[]
+        p=0
+        fig = plt.figure()
+
+        while True:
+            fig.clear()
+            updated=self.update1s(.1)    
+            x_values.append(updated.getX())
+            
+            y_values.append(updated.getY())    
+            if updated.getY()>self.finalPos:
+                x_graph.append(updated.getX())
+                y2_values.append(updated.getY())
+
+            plt.plot(x_values,y_values, label = 'Position')
+            plt.scatter(x_values,y_values)
+            plt.legend()
+
+            plt.draw()
+            plt.pause(.2)
+
+            if updated.getY()<self.origFP:
+                plt.close()
+                break
+        
+        with plt.style.context('dark_background'):
+
+                plt.figure()
+                plt.plot(x_values, y_values, 'b-o',label='projectile of ball with range '+ str(self.getRange())+' m')
+                plt.plot(x_graph,y2_values,'y-o',label='Wanted path')
+                StTime=str(round(self.calculateTimeToFall(),2))
+                plt.xlabel("X Position",size=14)
+                plt.ylabel("Y position",size=14)
+                plt.scatter(self.initPos.getX(),self.initPos.getY(),color='r',label='starting point')
+                plt.legend()
+                plt.annotate('starting point',xy=(self.initPos.getX()-15,self.initPos.getY()-25),color='m')
+                txt='Plot of a projectile fired with initial velocity of '+ str(self.vi)+ ' m/s at '+str(self.angle)+' degrees'
+                txt2='Predicted flight time: '+str(round(self.calculateTimeToFall(),2))+ ' seconds'
+                txt3='Predicted range for flight: '+ str(round(self.getRange(),2))+ ' meters'
+                plt.figtext(0.5, -.1, txt, wrap=True, horizontalalignment='center', fontsize=1)
+                plt.figtext(0.5, -.2, txt2, wrap=True, horizontalalignment='center', fontsize=14)
+                plt.figtext(0.5, -.3, txt3, wrap=True, horizontalalignment='center', fontsize=14)
+                plt.title("Position graph of the ball thrown at "+ str(self.angle)+' degrees with initial speed \n of '+str(self.vi)+' m/s  from position ' +str(self.initPos)+ ' that took '+str(StTime+' seconds'),fontsize=12)
+                plt.savefig('DvT.png')
+                plt.show()
+                plt.close()
+                self.Time=self.OrigT
+
+
+    def graphSxT(self):
+        x_values=[]
+        y_values=[]
+        k=0
+        pos1=self.initPos
+        fig = plt.figure()
+        while True:
+            fig.clear()
+            pos2=self.update1s(.1)
+            d=pos2.getY()-pos1.getY()
+            k+=0.1 
+            Vy=(self.Viy**2+ 2*self.g*d)
+            if Vy<0:
+                Vy=abs(Vy)
+            Vy=Vy**.5
+            resultant=(Vy**2+self.Vix**2)**.5
+            x_values.append(round(resultant,3))
+            y_values.append(self.Time)
+            plt.plot(y_values,x_values, label = 'Speed')
+            plt.legend()
+            plt.scatter(y_values,x_values)
+            plt.draw()
+            plt.pause(.1)
+
+            if pos2.getY()<self.finalPos:
+                plt.close()
+                break       
+
+        with plt.style.context('dark_background'):
+            plt.ylim([0,10])
+            plt.figure()
+            plt.plot(y_values,x_values, 'r--',label='speed')
+            plt.scatter(y_values,x_values)
+            plt.xlabel("Time",size=14)
+            plt.ylabel("Speed",size=14)
+            txt="Speed graph over time"
+            plt.title("Graph of the speed of the ball thrown at "+ str(self.angle)+' degrees \n with initial speed of '+str(self.vi)+' from position ' +str(self.initPos))
+            plt.legend()
+            plt.figtext(0.5, -.1, txt, wrap=True, horizontalalignment='center', fontsize=14)
+            plt.show()
+            self.Time=self.OrigT
+            plt.close()
+
+
+        
+    def graphAvT(self):
+        x_values=[]
+        y_values=[]
+        k=0
+        fig = plt.figure()
+
+        while True:
+            fig.clear()
+            pos2=self.update1s(.1)
+            aY=self.g 
+            aX=self.accelerationx
+            Vya=(aX**2+aY**2)**.5
+            y_values.append(k)
+            k+=.1
+            x_values.append(round(Vya,3))
+            plt.plot(y_values,x_values, label = 'Acceleration')
+            plt.legend()
+            plt.scatter(y_values,x_values)
+            plt.draw()
+            plt.pause(.1)
+            if pos2.getY()<self.finalPos:
+                plt.close()
+                break     
+
+        with plt.style.context('dark_background'):
+            plt.figure()
+            plt.plot( y_values,x_values, 'b--',color = 'yellow',label='acceleration')
+            plt.scatter( y_values,x_values ,color = 'yellow')
+            plt.ylabel("Time",size=14)
+            plt.xlabel("Magnitude of Acceleration",size=14)
+            plt.title("Graph of the acceleration of the ball thrown at "+ str(self.angle)+' degrees \n with initial speed of '+str(self.vi)+' from position ' +str(self.initPos))
+            plt.legend(loc='best')
+            txt="Magnitude of Acceleration graph over time"
+            plt.figtext(0.5, -.1, txt, wrap=True, horizontalalignment='center', fontsize=14)
+            plt.show()
+            plt.savefig('AvT.png')
+            self.Time=self.OrigT
+            plt.close()
+
+
+        
+
+    def graphAllSim(self):
+        dXValues = []
+        dYValues = []
+        aXValues = []
+        aYValues = []
+        sXValues = []
+        sYValues = []
+        k = 0
+         
+        fig = plt.figure()
+        
+
+        while True:
+            fig.clear()
+            #POSITION  
+            pos2=self.update1s(.1)
+            updated=self.update1s(.1)    
+            dXValues.append(updated.getX())
+            dYValues.append(updated.getY()) 
+            plt.plot(dXValues, dYValues,label = 'Position')
+
+            #SPEED
+            d=pos2.getY()-self.initPos.getY()
+            k+=0.1 
+            Vy=(self.Viy**2+ 2*self.g*d)
+            if Vy<0:
+                Vy=abs(Vy)
+            Vy=Vy**.5
+            resultant=(Vy**2+self.Vix**2)**.5
+            sXValues.append(round(resultant,3))
+            sYValues.append(self.Time)
+            plt.plot(sYValues, sXValues,label = 'Speed')
+
+            #ACCELERATION
+            aY=self.g 
+            aX=self.accelerationx
+            Vya=(aX**2+aY**2)**.5
+            aYValues.append(k)
+            aXValues.append(round(Vya,3))
+            plt.plot(aXValues, aYValues, label = 'Acceleration')
+            plt.legend()
+            plt.draw()
+            plt.pause(.2)
+            
+            if pos2.getY()<self.finalPos:
+                plt.close()
+                break
+
+
+a=projectile(10, Pos(0,100), angle=45)
+#a.graphAllSim()
+#a.graphAvT()
+#a.graphDxT()
+#a.graphSxT()
+
+
